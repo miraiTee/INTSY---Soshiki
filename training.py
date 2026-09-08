@@ -36,13 +36,6 @@ def train_bot(cat_name, render: int = -1):
     # Training hyperparameters
     episodes = 5000 # Training is capped at 5000 episodes for this project
     
-    #############################################################################
-    # TODO: YOU MAY DECLARE OTHER VARIABLES AND PERFORM INITIALIZATIONS HERE.   #
-    #############################################################################
-    # Hint: You may want to declare variables for the hyperparameters of the    #
-    # training process such as learning rate, exploration rate, etc.            #
-    #############################################################################
-    
     ### HYPERPARAMS SECTION
     
     # Alpha and Gamma
@@ -58,7 +51,7 @@ def train_bot(cat_name, render: int = -1):
     exp_rate_decay = 0.9985
     lin_rate_decay = 0.0003
 
-    # Allot bajillion moves
+    # Allot bajillion steps
     MAX_MOVES = 500
     
     # Stats counters
@@ -67,29 +60,11 @@ def train_bot(cat_name, render: int = -1):
     episode_steps_list = []
     episode_rewards_list = []
 
-
-
-
-
-
-
-    
     #############################################################################
     # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
     #############################################################################
     
     for ep in range(1, episodes + 1):
-        ##############################################################################
-        # TODO: IMPLEMENT THE Q-LEARNING TRAINING LOOP HERE.                         #
-        ##############################################################################
-        # Hint: These are the general steps you must implement for each episode.     #
-        # 1. Reset the environment to start a new episode.                           #
-        # 2. Decide whether to explore or exploit.                                   #
-        # 3. Take the action and observe the next state.                             #
-        # 4. Since this environment doesn't give rewards, compute reward manually    #
-        # 5. Update the Q-table accordingly based on agent's rewards.                #
-        ############################################################################## 
-        
         state, _ = env.reset()
         
         # Initialize episode params
@@ -98,10 +73,6 @@ def train_bot(cat_name, render: int = -1):
         
         done = False
         truncated = False
-        
-        # Bot pos for checking wallbangs or circling around that result to fruitlessness 
-        prev_bot_pos = None
-        prev_prev_bot_pos = None
 
         while not done and not truncated:
                 
@@ -120,11 +91,6 @@ def train_bot(cat_name, render: int = -1):
             if steps >= MAX_MOVES and not done:
                 truncated = True
                 
-            bot_pos, cat_pos = state_split(state)
-            new_bot_pos, new_cat_pos = state_split(new_state)
-            player_moved = bot_pos != new_bot_pos
-            cat_moved = cat_pos != new_cat_pos
-            
             # Reward Section
             # counter to reduce time (i.e. a sol)
             reward = -2.0 
@@ -133,15 +99,7 @@ def train_bot(cat_name, render: int = -1):
                 reward += 100.0
             elif truncated:
                 reward += -300.0
-            else:
-                if not cat_moved:
-                    if not player_moved:
-                        reward -= 10.0
-                    elif prev_prev_bot_pos == new_bot_pos:
-                        reward -= 8.0
                         
-            prev_prev_bot_pos = prev_bot_pos
-            prev_bot_pos = bot_pos
             episode_reward += reward
 
             q_value = q_table[state][action]
@@ -179,7 +137,7 @@ def train_bot(cat_name, render: int = -1):
 
             stats.add_summary(
                 episode=ep,
-                ave_steps=ave_steps,
+                ave_moves=ave_steps,
                 ave_reward=ave_reward,
                 success_rate=success_rate,
                 epsilon=exp_rate,
@@ -188,27 +146,7 @@ def train_bot(cat_name, render: int = -1):
         # RUN AFTER ALL EPISODE FINISHED 
         if ep == episodes:
             stats.plot(cat_name)
-                
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        
-        
+                        
         #############################################################################
         # END OF YOUR CODE. DO NOT MODIFY ANYTHING BEYOND THIS LINE.                #
         #############################################################################

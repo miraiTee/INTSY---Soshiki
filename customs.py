@@ -1,3 +1,73 @@
+import os
+import random
+import time
+from typing import Optional, Tuple, Any, Type
+from abc import ABC, abstractmethod
+import gymnasium as gym
+from gymnasium import spaces
+import numpy as np
+import pygame
+
+
+class Cat(ABC):
+    def __init__(self, grid_size: int, tile_size: int):
+        self.grid_size = grid_size
+        self.tile_size = tile_size
+        self.pos = np.zeros(2, dtype=np.int32)
+        self.visual_pos = np.zeros(2, dtype=float)
+        
+        self.player_pos = np.zeros(2, dtype=np.int32)
+        self.prev_player_pos = np.zeros(2, dtype=np.int32)
+        self.last_player_action = None
+        
+        self.current_distance = 0  
+        self.prev_distance = 0     
+        
+        self._load_sprite()
+    
+    @abstractmethod
+    def _get_sprite_path(self) -> str:
+        pass
+    
+    def _load_sprite(self):
+        img_path = self._get_sprite_path()
+        if not os.path.exists(img_path):
+            self.sprite = pygame.Surface((self.tile_size, self.tile_size))
+            self.sprite.fill((200, 100, 100))
+            return
+        try:
+            self.sprite = pygame.image.load(img_path)
+            self.sprite = self.sprite.convert_alpha()
+            self.sprite = pygame.transform.scale(self.sprite, (self.tile_size, self.tile_size))
+        except Exception as e:
+            self.sprite = pygame.Surface((self.tile_size, self.tile_size))
+            self.sprite.fill((200, 100, 100))
+    
+    def update_player_info(self, player_pos: np.ndarray, player_action: int) -> None:
+        self.prev_player_pos = self.player_pos.copy()
+        self.player_pos = player_pos.copy()
+        self.last_player_action = player_action
+
+        self.prev_distance = abs(self.pos[0] - self.prev_player_pos[0]) + abs(self.pos[1] - self.prev_player_pos[1])
+        self.current_distance = abs(self.pos[0] - self.player_pos[0]) + abs(self.pos[1] - self.player_pos[1])
+    
+    def player_moved_closer(self) -> bool:
+        return self.current_distance < self.prev_distance
+    
+    @abstractmethod
+    def move(self) -> None:
+        pass
+    
+    def reset(self, pos: np.ndarray) -> None:
+        self.pos = pos.copy()
+        self.visual_pos = pos.astype(float)
+    
+    def update_visual_pos(self, dt: float, animation_speed: float) -> None:
+        for i in range(2):
+            diff = self.pos[i] - self.visual_pos[i]
+            if abs(diff) > 0.01:
+                self.visual_pos[i] += np.clip(diff * animation_speed * dt, -1, 1)
+
 ####################################
 # CATT BEHAVIOR IMPLEMENTATIONS    #
 ####################################

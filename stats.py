@@ -25,10 +25,10 @@ class Stats:
         self.rewards.append(reward)
         self.ep_len.append(length)
 
-    def add_summary(self, episode: int, ave_steps: float, ave_reward: float, success_rate: float, epsilon: float):
+    def add_summary(self, episode: int, ave_moves: float, ave_reward: float, success_rate: float, epsilon: float):
         self.summary.append({
             "episode": episode,
-            "ave_steps": ave_steps,
+            "ave_moves": ave_moves,
             "ave_reward": ave_reward,
             "success_rate": success_rate,
             "epsilon": epsilon
@@ -73,7 +73,7 @@ class Stats:
 
         ax_len.set_title("Average Episode Length", fontsize=10, fontweight="bold")
         ax_len.set_xlabel("Episode", fontsize=8.5)
-        ax_len.set_ylabel("Steps per Episode", fontsize=8.5)
+        ax_len.set_ylabel("Moves per Episode", fontsize=8.5)
         ax_len.grid(alpha=0.25)
 
         len_handles = [
@@ -88,28 +88,55 @@ class Stats:
         total = len(self.rewards)
         cap_rate = sum(self.captured) / total * 100 if total else 0.0
         trunc_rate = sum(self.truncated) / total * 100 if total else 0.0
-        cap_steps = [steps for steps, captured in zip(self.ep_len, self.captured) if captured]
+        cap_moves = [moves for moves, captured in zip(self.ep_len, self.captured) if captured]
 
         ave_reward = np.mean(self.rewards) if total else 0.0
-        ave_ep_steps = np.mean(self.ep_len) if total else 0.0
-        ave_cap_steps = np.mean(cap_steps) if cap_steps else 0.0
+        ave_ep_moves = np.mean(self.ep_len) if total else 0.0
+        ave_cap_moves = np.mean(cap_moves) if cap_moves else 0.0
+
+
+        # Statistics for the last 500 episodes
+        last_n = min(self.window, total)
+
+        last_captured = self.captured[-last_n:] if last_n else []
+        last_truncated = self.truncated[-last_n:] if last_n else []
+        last_rewards = self.rewards[-last_n:] if last_n else []
+        last_ep_moves = self.ep_len[-last_n:] if last_n else []
+
+        last_win_rate = (
+            sum(last_captured) / last_n * 100
+            if last_n else 0.0
+        )
+
+        last_truncation_rate = (
+            sum(last_truncated) / last_n * 100
+            if last_n else 0.0
+        )
+
+        last_avg_reward = np.mean(last_rewards) if last_rewards else 0.0
+        last_avg_moves = np.mean(last_ep_moves) if last_ep_moves else 0.0
 
         summary_text = (
             "SUMMARY\n"
             f"Episodes:           {total:,}\n"
-            f"Capture Rate:       {cap_rate:.1f}%\n"
+            f"Win Rate:           {cap_rate:.1f}%\n"
             f"Truncation Rate:    {trunc_rate:.1f}%\n\n"
             f"Average Reward:     {ave_reward:.1f}\n"
-            f"Avg Episode Steps:  {ave_ep_steps:.1f}\n"
-            f"Avg Capture Steps:  {ave_cap_steps:.1f}\n"
-            f"Decay Type:          {self.decay_type.capitalize()}\n"
+            f"Avg Episode Moves:  {ave_ep_moves:.1f}\n"
+            f"Decay Type:         {self.decay_type.capitalize()}\n\n"
+            
+            f"Last {last_n} Episodes:\n"
+            f"Win Rate:           {last_win_rate:.1f}%\n"
+            f"Truncation Rate:    {last_truncation_rate:.1f}%\n"
+            f"Average Reward:     {last_avg_reward:.1f}\n"
+            f"Avg Episode Moves:  {last_avg_moves:.1f}\n\n"
         )
 
         if self.summary:
-            summary_text += f"{'Ep':>6} {'Steps':>6} {'Reward':>7} {'Win%':>6} {'ε':>5}\n"
+            summary_text += f"{'Ep':>6} {'Moves':>6} {'Reward':>7} {'Win%':>6} {'ε':>5}\n"
             summary_text += "-----------------------------------\n"
             for p in self.summary:
-                summary_text += f"{p['episode']:>6} {p['ave_steps']:>6.1f} {p['ave_reward']:>7.1f} {p['success_rate']:>6.1%} {p['epsilon']:>5.2f}\n"
+                summary_text += f"{p['episode']:>6} {p['ave_moves']:>6.1f} {p['ave_reward']:>7.1f} {p['success_rate']:>6.1%} {p['epsilon']:>5.2f}\n"
 
         ax_summary.text(
             0.05, 0.95, summary_text,
